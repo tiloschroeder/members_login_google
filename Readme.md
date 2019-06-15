@@ -88,7 +88,7 @@ If everything works, the user will be redirected to the 'redirect' value, just l
 
 ### 3. Create a Google API Console Project
 
-Go to the (Google API Console)[https://console.developers.google.com/].
+Go to the [Google API Console](https://console.developers.google.com/).
 
 Create a __New Project__:
 
