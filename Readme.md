@@ -110,4 +110,4 @@ Select the __Credentials__ tab, click the __Create credentials__ drop-down menu 
 - Enter the above created page in __Authorized redirect URIs__ field (e.g. https://example.org/google/)
 - Click the __Create__ button
 
-## See a working demo [here](https://login.bluesky-systems.eu)
+## See a working demo [here](https://social-login.tiloschroeder.de)
