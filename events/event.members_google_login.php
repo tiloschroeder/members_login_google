@@ -11,8 +11,8 @@ class eventmembers_google_login extends Event
             'name' => extension_members_login_google::EXT_NAME,
             'author' => array(
                 'name' => 'Tilo Schröder',
-                'website' => 'https://bluesky-systems.de',
-                'email' => 'info@bluesky-systems.de',
+                'website' => 'https://tiloschroeder.de',
+                'email' => 'hello@tiloschroeder.de',
             ),
             'version' => '1.0.0',
             'release-date' => '2019-06-12T12:15:00+00:00',
@@ -53,7 +53,7 @@ class eventmembers_google_login extends Event
         $CLIENT_REDIRECT_URL = Symphony::Configuration()->get('client-redirect-url', 'members_google_login');
         $MEMBERS_SECTION_ID = Symphony::Configuration()->get('members-section-id', 'members_google_login');
 
-        if(is_array($_POST['member-google-action']) && isset($_POST['member-google-action']['login'])) {
+        if ( isset($_POST['member-google-action']['login']) ) {
             $USER_INFO = urlencode('https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email');
             $_SESSION['OAUTH_SERVICE'] = 'google';
             $_SESSION['OAUTH_START_URL'] = $_REQUEST['redirect'];
@@ -64,21 +64,21 @@ class eventmembers_google_login extends Event
             $url = "https://accounts.google.com/o/oauth2/auth?scope=$USER_INFO&redirect_uri=$CLIENT_REDIRECT_URL&response_type=code&client_id=$CLIENT_ID&access_type=online";
             redirect($url);
 
-        } elseif (isset($_POST['code'])) {
+        } elseif ( isset($_POST['code']) ) {
             $gdata = $this->getAccessToken($CLIENT_ID, $CLIENT_REDIRECT_URL, $CLIENT_SECRET, $_POST['code']);
 
-            if (isset($gdata) && is_array($gdata) === true) {
+            if ( isset($gdata) && is_array($gdata) === true ) {
                 $_SESSION['ACCESS_TOKEN'] = $gdata['access_token'];
                 $user_info = $this->getUserProfileInfo($gdata['access_token']);
 
-                if (is_array($user_info) && isset($user_info['email'])) {
+                if ( is_array($user_info) && isset($user_info['email']) ) {
                     $_SESSION['OAUTH_TIMESTAMP'] = time();
                     $_SESSION['OAUTH_SERVICE'] = 'google';
                     $_SESSION['ACCESS_TOKEN_SECRET'] = null;
                     $_SESSION['OAUTH_USER_ID'] = $user_info['id'];
                     $_SESSION['OAUTH_USER_NAME'] = $user_info['name'];
                     $_SESSION['OAUTH_USER_IMG'] =  $user_info['picture'];
-                    $_SESSION['OAUTH_USER_CITY'] = $user_info['locale'];
+                    $_SESSION['OAUTH_USER_CITY'] = $user_info['locale'] ?? null;
                     $_SESSION['OAUTH_USER_EMAIL'] = $user_info['email'];
 
                     $edriver = Symphony::ExtensionManager()->create('members');
@@ -88,30 +88,34 @@ class eventmembers_google_login extends Event
                     $email = $user_info['email'];
                     $m = $femail->fetchMemberIDBy($email);
 
-                    if (!$m) {
+                    if ( !$m ) {
                         $m = new Entry();
                         $m->set('section_id', $_SESSION['OAUTH_MEMBERS_SECTION_ID']);
                         $m->setData($femail->get('id'), array('value' => $email));
                         $memberUsername = Symphony::Configuration()->get('member-username-field', 'members_google_login');
-                        if ($memberUsername and !empty($user_info['name'])) {
+                        if ( $memberUsername and !empty($user_info['name']) ) {
                             $m->setData(General::intval($memberUsername), array(
-                                'value' => strtolower(str_replace(' ', '.', $user_info['name'])),
+                                'value' => strtolower(str_replace(
+                                                            array(' ','Ä','Ö','Ü','ä','ö','ü','ß'),
+                                                            array('.','ae','oe','ue','ae','oe','ue','ss'),
+                                                            $user_info['name'])
+                                                        ),
                             ));
                         }
                         $memberFirstname = Symphony::Configuration()->get('member-firstname-field', 'members_google_login');
-                        if ($memberFirstname and !empty($user_info['given_name'])) {
+                        if ( $memberFirstname and !empty($user_info['given_name']) ) {
                             $m->setData(General::intval($memberFirstname), array(
                                 'value' => $user_info['given_name'],
                             ));
                         }
                         $memberLastname = Symphony::Configuration()->get('member-lastname-field', 'members_google_login');
-                        if ($memberLastname and !empty($user_info['family_name'])) {
+                        if ( $memberLastname and !empty($user_info['family_name']) ) {
                             $m->setData(General::intval($memberLastname), array(
                                 'value' => $user_info['family_name'],
                             ));
                         }
                         $memberSince = Symphony::Configuration()->get('member-registered-since', 'members_google_login');
-                        if ($memberSince) {
+                        if ( $memberSince ) {
                             $today = $this->_env['param']['today'];
                             $time = $this->_env['param']['current-time'];
                             $m->setData(General::intval($memberSince), array(
@@ -127,7 +131,7 @@ class eventmembers_google_login extends Event
                         'email' => $email
                     ));
 
-                    if ($login) {
+                    if ( $login ) {
                         redirect($_SESSION['OAUTH_START_URL']);
                     } else  {
                         throw new Exception('Google login failed');
@@ -145,8 +149,7 @@ class eventmembers_google_login extends Event
                 $_SESSION['OAUTH_TOKEN'] = null;
                 session_destroy();
             }
-        } elseif (is_array($_POST['member-google-action']) && isset($_POST['member-google-action']['logout']) ||
-                  is_array($_POST['member-action']) && isset($_POST['member-action']['logout'])) {
+        } elseif ( isset($_POST['member-google-action']['logout']) ) {
             $_SESSION['OAUTH_SERVICE'] = null;
             $_SESSION['OAUTH_START_URL'] = null;
             $_SESSION['OAUTH_MEMBERS_SECTION_ID'] = null;
@@ -190,7 +193,7 @@ class eventmembers_google_login extends Event
         $data = json_decode(curl_exec($ch), true);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        if($http_code !== 200) {
+        if ( $http_code !== 200 ) {
             throw new Exception('Error : Failed to get user information');
         }
 
